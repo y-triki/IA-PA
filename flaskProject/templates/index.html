@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Assistant IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-900 text-white font-poppins" >
+    <nav class="flex items-center justify-between p-4 border-b border-gray-700">
+      <div class="flex items-center">
+
+        <h1 class="text-xl font-bold">Smart Assistant</h1>
+      </div>
+      <div class="space-x-2">
+        <button class="language-btn px-3 py-1 rounded bg-blue-600 text-white" data-lang="fr">
+          FR
+        </button>
+        <button class="language-btn px-3 py-1 rounded bg-gray-700" data-lang="en">
+          EN
+        </button>
+      </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto mt-10">
+      <section class="text-center mb-8">
+        <h1 id="frTitle" class="text-3xl font-bold mb-2">
+          Transformez vos PDF en <span class="text-blue-400">résumés intelligents</span>
+        </h1>
+        <h1 id="enTitle" class="text-3xl font-bold mb-2 hidden">
+          Turn your PDF into <span class="text-blue-400">smart summaries</span>
+        </h1>
+        <p id="frSubtitle">Résumé & quiz automatisés</p>
+        <p id="enSubtitle" class="hidden">Automated summary & quiz</p>
+      </section>
+
+      <form
+        method="POST"
+        action="{{ url_for('upload_file') }}"
+        enctype="multipart/form-data"
+        class="bg-gray-800 p-6 rounded-lg shadow-md space-y-6"
+      >
+        <input type="hidden" name="lang" id="langInput" value="fr" />
+
+        <div>
+          <label
+            for="file"
+            class="block text-sm font-medium mb-2"
+            id="frUploadText"
+            >Déposez votre fichier ici (PDF)</label
+          >
+          <label
+            for="file"
+            class="hidden block text-sm font-medium mb-2"
+            id="enUploadText"
+            >Drop your file here (PDF)</label
+          >
+          <input
+            type="file"
+            name="file"
+            id="file"
+            accept=".pdf,.mp3,.wav,.m4a"
+            required
+            class="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label for="question" id="frQuestionLabel" class="block text-sm mb-1"
+            >Posez une question (facultatif) :</label
+          >
+          <label for="question" id="enQuestionLabel" class="hidden block text-sm mb-1"
+            >Ask a question (optional):</label
+          >
+          <input
+            type="text"
+            name="question"
+            id="question"
+            placeholder="Exemple : Quels sont les points clés abordés ?"
+            class="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+        >
+          <span id="frButtonText">Analyser</span>
+          <span id="enButtonText" class="hidden">Analyze</span>
+        </button>
+      </form>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const langButtons = document.querySelectorAll(".language-btn");
+        const langInput = document.getElementById("langInput");
+
+        langButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const lang = btn.dataset.lang;
+            langButtons.forEach((b) => b.classList.remove("bg-blue-600", "text-white"));
+            btn.classList.add("bg-blue-600", "text-white");
+            langInput.value = lang;
+
+            const ids = ["Title", "Subtitle", "UploadText", "QuestionLabel", "ButtonText"];
+            ids.forEach((id) => {
+              document.getElementById("fr" + id).classList.toggle("hidden", lang !== "fr");
+              document.getElementById("en" + id).classList.toggle("hidden", lang !== "en");
+            });
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
+
+
