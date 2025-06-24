@@ -7,6 +7,7 @@ from backend.pipelines.translation import translate_fr_to_en, translate_en_to_fr
 from backend.pipelines.utils import clean_and_format_summary
 from backend.pipelines.model import TransformerSummarizer
 from sentence_transformers import SentenceTransformer, util
+from langdetect import detect
 
 # ---- Paramètres ---- #
 device = torch.device("cpu")
@@ -17,7 +18,7 @@ model_path = os.path.join(BASE_DIR, '..', 'models', 'best_model.pth')
 
 # ---- Initialisation ---- #
 BASE_DIR = os.path.dirname(__file__)
-processor = PDFProcessor(tokenizer_path="../backend/models")
+processor = PDFProcessor(tokenizer_dir="../backend/models")
 tokenizer = processor.tokenizer
 vocab_size = tokenizer.get_vocab_size()
 pad_id = tokenizer.token_to_id("<pad>") if "<pad>" in tokenizer.get_vocab() else 0
@@ -43,33 +44,59 @@ else:
 # ---- Chargement du modèle MiniLM ---- #
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
-def summarize_pdf(pdf_bytes, max_chunk_len=1024, p=0.9, threshold=0.6):
+def summarize_pdf(pdf_file, max_chunk_len=30, p=0.9, threshold=0.6):
     """Résumé détaillé du contenu d'un PDF donné en entrée (bytes)."""
-    raw_text = processor.extract_text(pdf_bytes)
+    try:
+        print("[summarize_pdf] Début du processus...")
+        raw_text = processor.extract_text(pdf_file)
+        print(f"[summarize_pdf] Extrait brut (1000 chars max): {raw_text[:1000]}")
+        print(f"[summarize_pdf] Longueur du texte extrait : {len(raw_text)} caractères.")
 
-    # Détection de la langue
-    if detect_lang(raw_text) == "fr":
-        raw_text = translate_fr_to_en(raw_text)
+        # Détection de la langue
+        lang_detected = detect(raw_text)
+        print(f"[INFO] Langue du texte détectée : {lang_detected}")
 
-    chunks = processor.chunk_and_tokenize(raw_text, max_chunk_len)
+        # Si français, traduction en anglais pour le modèle
+        if lang_detected == "fr":
+            print("[INFO] Texte en français, traduction en anglais pour le modèle...")
+            text_for_model = translate_fr_to_en(raw_text)
+        else:
+            text_for_model = raw_text
+            print(f"[INFO] Texte en {lang_detected}, pas de traduction nécessaire pour le modèle.")
 
-    summaries = []
-    for chunk in chunks:
-        src_ids = torch.tensor([chunk], device=device)
-        src_mask = (src_ids != pad_id).long()
-        summary_en = nucleus_sampling_decode(model, src_ids, src_mask, tokenizer, p=p)
-        summary_en = clean_and_format_summary(summary_en)
-        summaries.append(summary_en)
+        # Découpe du texte
+        max_chunks_for_test = 5
+        chunks = processor.chunk_and_tokenize(text_for_model, max_chunk_len)[:max_chunks_for_test]
+        summaries = []
+        for idx, chunk in enumerate(chunks):
+            print(f"[summarize_pdf] Traitement du chunk {idx + 1}/{len(chunks)}...")
+            src_ids = torch.tensor([chunk], device=device)
+            src_mask = (src_ids != pad_id).long()
+            summary_en = nucleus_sampling_decode(model, src_ids, src_mask, tokenizer, p=p)
+            summaries.append(clean_and_format_summary(summary_en))
 
-    # Structuration du résumé
-    clustered = cluster_summaries(summaries, embedder, threshold)
-    structured_en = "\n\n".join([" ".join(group) for group in clustered])
-    structured_fr = translate_en_to_fr(structured_en)
+        clustered = cluster_summaries(summaries, embedder, threshold)
+        structured_en = "\n\n".join([" ".join(group) for group in clustered])
 
-    return {
-        "summary": structured_fr,
-        "chunks_count": len(chunks),
-    }
+        # Si français à la base, on retraduit le résumé final
+        if lang_detected == "fr":
+            structured_output = translate_en_to_fr(structured_en)
+            print("[summarize_pdf] Résumé traduit en français.")
+        else:
+            structured_output = structured_en
+            print("[summarize_pdf] Résumé final construit.")
+
+        return {
+            "summary": structured_output,
+            "chunks_count": len(chunks),
+        }
+
+    except Exception as e:
+        print(f"[summarize_pdf][ERREUR] {e}")
+        return {
+            "summary": "",
+            "chunks_count": 0,
+        }
 
 
 def cluster_summaries(sentences, model, threshold=0.6):

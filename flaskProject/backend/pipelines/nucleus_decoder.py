@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 def nucleus_sampling_decode(
     model, src_ids, src_mask, tokenizer,
-    max_len=128, p=0.9, temperature=1.0, repetition_penalty=1.1
+    max_len=30, p=0.9, temperature=1.0, repetition_penalty=1.1
 ):
     device = src_ids.device
     pad_id = tokenizer.token_to_id("<pad>")

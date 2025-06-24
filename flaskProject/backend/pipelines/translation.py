@@ -2,8 +2,6 @@ import argostranslate.package
 import argostranslate.translate
 from langdetect import detect
 
-
-
 def detect_lang(text: str) -> str:
     """
     Détecte automatiquement la langue d’un texte. Retourne "fr", "en", etc.
