@@ -34,10 +34,17 @@ def upload_file():
         path = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(path)
 
-        # ⚡️ Appel DIRECT à summarize_pdf
-        with open(path, "rb") as pdf_file:
-            pdf_bytes = pdf_file.read()
-            result = summarize_pdf(pdf_bytes)
+        try:
+            print(">>> Appel à summarize_pdf...")
+            with open(path, "rb") as pdf_file:
+                result = summarize_pdf(pdf_file.read())
+            print(">>> summarize_pdf exécuté sans erreur.")
+        except Exception as e:
+            print(f"Erreur pendant summarize_pdf : {e}")
+            return render_template("error.html", error_message=f"Erreur pendant le traitement du fichier : {e}")
+
+        if not result or not isinstance(result, dict) or "summary" not in result:
+            return render_template("error.html", error_message="Échec du traitement du fichier.")
 
         summary = result.get("summary", "")
         answer = ""  # À implémenter si nécessaire
@@ -52,32 +59,38 @@ def upload_file():
             "quiz": quiz
         }, output_dir="shared/exports")  # Adapter le chemin si nécessaire
 
+
+
         return render_template("result.html",
                                summary=summary,
                                answer=answer,
                                quiz=quiz,
                                question=question,
                                filename=file.filename)
+        # Sauve dans la session
+        session["filename"] = file.filename
+        session["summary"] = summary
 
     return redirect(url_for("index"))
 
-
 @app.route("/generate_quiz", methods=["POST"])
 def generate_quiz_route():
-    """Génération du QCM à partir du résumé."""
-    summary = request.form.get("summary", "")
-    question = request.form.get("question", "")
-    quiz = generate_quiz(summary) if summary else []
-    answer = retrieve_relevant([summary], question) if question else ""
-    session["summary"] = summary
-    session["quiz"] = quiz
+    """Génération du QCM à partir du résumé déjà généré."""
+    summary = session.get("summary")
+    filename = session.get("filename")
+    # chemin du fichier uploadé
+    path = os.path.join(UPLOAD_FOLDER, filename)
+
+    if not summary or not filename:
+        return render_template("error.html", error_message="Aucun fichier ou résumé à utiliser.")
+
+    #  Appelle ici ta fonction de génération de questions
+    questions = generate_quiz(path, summary, vocab, model, device)
+
     return render_template("quiz.html",
                            summary=summary,
-                           quiz=quiz,
-                           answer=answer,
-                           question=question)
-
-
+                           quiz=[{"question": questions}],  # Ou liste de questions
+                           filename=filename)
 @app.route("/submit_quiz", methods=["POST"])
 def submit_quiz():
     """Récupération des réponses du quiz soumis."""
