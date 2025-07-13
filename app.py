@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 import os
 import sys
 
+from backend.pipelines.pdf_pipeline import PDFProcessor
+
 # Ajout du chemin du backend
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from backend.pipelines.generation_pipeline import summarize_pdf
@@ -23,6 +25,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def index():
     return render_template("index.html")
 
+
 @app.route("/upload", methods=["POST"])
 def upload_file():
     file = request.files.get("file")
@@ -34,33 +37,43 @@ def upload_file():
 
         try:
             with open(path, "rb") as pdf_file:
+                # Use the enhanced summarize_pdf function
                 result = summarize_pdf(pdf_file.read())
+
+            # Extract summary and metadata
+            summary = result.get("summary", "")
+            chunks_count = result.get("chunks_count", 0)
+            model_used = result.get("model_used", "student")
+
+            if not summary:
+                return render_template("error.html", error_message="Échec du traitement du fichier.")
+
+            session["filename"] = file.filename
+            session["summary"] = summary
+
+            # Save results with additional metadata
+            save_results({
+                "filename": file.filename,
+                "summary": summary,
+                "question": question,
+                "answer": "",
+                "quiz": [],
+                "chunks_count": chunks_count,
+                "model_used": model_used
+            }, output_dir="shared/exports")
+
+            return render_template("result.html",
+                                   summary=summary,
+                                   answer="",
+                                   quiz=[],
+                                   question=question,
+                                   filename=file.filename)
+
         except Exception as e:
             return render_template("error.html", error_message=f"Erreur pendant le traitement du fichier : {e}")
 
-        if not result or not isinstance(result, dict) or "summary" not in result:
-            return render_template("error.html", error_message="Échec du traitement du fichier.")
-
-        summary = result.get("summary", "")
-        session["filename"] = file.filename
-        session["summary"] = summary
-
-        save_results({
-            "filename": file.filename,
-            "summary": summary,
-            "question": question,
-            "answer": "",
-            "quiz": []
-        }, output_dir="shared/exports")
-
-        return render_template("result.html",
-                               summary=summary,
-                               answer="",
-                               quiz=[],
-                               question=question,
-                               filename=file.filename)
-
     return redirect(url_for("index"))
+
 
 @app.route("/generate_quiz", methods=["POST"])
 def generate_quiz_route():
@@ -107,6 +120,9 @@ def uploaded_file(filename):
     file_path = safe_join(UPLOAD_FOLDER, filename)
     return send_from_directory(UPLOAD_FOLDER, os.path.basename(file_path))
 
+
+# app.py (updated /ask_question route)
+# app.py (updated /ask_question route)
 @app.route("/ask_question", methods=["POST"])
 def ask_question():
     filename = request.form.get("filename")
@@ -118,22 +134,34 @@ def ask_question():
     if not os.path.exists(path):
         return redirect(url_for("index"))
 
-    with open(path, "rb") as pdf_file:
-        pdf_bytes = pdf_file.read()
-        summary_result = summarize_pdf(pdf_bytes)
+    try:
+        # Create text extractor (no tokenizer needed)
+        text_extractor = PDFProcessor(tokenizer_dir=None)
 
-    summary = summary_result.get("summary", "") if isinstance(summary_result, dict) else ""
-    chunks = [summary[i:i + 500] for i in range(0, len(summary), 500)]
-    answer = retrieve_relevant(chunks, question)
+        # Extract text from PDF
+        with open(path, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+            raw_text = text_extractor.extract_text(pdf_bytes)
 
-    return render_template(
-        "result.html",
-        summary=summary,
-        answer=answer,
-        quiz=[],
-        question=question,
-        filename=filename
-    )
+        # Use teacher model for French prompt-based QA
+        from backend.pipelines.generation_pipeline import answer_question_with_teacher_french
+        answer = answer_question_with_teacher_french(
+            raw_text=raw_text,
+            question=question
+        )
+
+        return render_template(
+            "result.html",
+            summary=session.get("summary", ""),
+            answer=answer,
+            quiz=[],
+            question=question,
+            filename=filename
+        )
+
+    except Exception as e:
+        return render_template("error.html",
+                               error_message=f"Erreur lors du traitement de la question: {str(e)}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

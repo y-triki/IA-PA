@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # utils/translation_utils.py
 
 import sys
@@ -47,7 +46,7 @@ def translate_to_fr(text: str) -> str:
     tokens = _tokenizer_en2fr.prepare_seq2seq_batch([text], return_tensors="pt", padding=True)
     output = _model_en2fr.generate(**tokens)
     return _tokenizer_en2fr.batch_decode(output, skip_special_tokens=True)[0]
-=======
+
 # utils/translation_utils.py
 
 import sys
@@ -96,4 +95,3 @@ def translate_to_fr(text: str) -> str:
     tokens = _tokenizer_en2fr.prepare_seq2seq_batch([text], return_tensors="pt", padding=True)
     output = _model_en2fr.generate(**tokens)
     return _tokenizer_en2fr.batch_decode(output, skip_special_tokens=True)[0]
->>>>>>> ecbe693 (Mise à jour depuis EC2 : dernières modifs locales)
