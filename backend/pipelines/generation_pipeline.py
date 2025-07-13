@@ -14,7 +14,7 @@ from langdetect import detect, DetectorFactory
 DetectorFactory.seed = 0
 # ---- Paramètres ---- #
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"⚙️ Using device: {device}")
+print(f" Using device: {device}")
 
 # ---- Initialisation ---- #
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,9 +49,9 @@ try:
         student_model.load_state_dict(checkpoint["model_state_dict"])
     else:
         student_model.load_state_dict(checkpoint)
-    print("✅ Student model loaded successfully")
+    print(" Student model loaded successfully")
 except Exception as e:
-    print(f"❌ Error loading student model: {e}")
+    print(f" Error loading student model: {e}")
     raise
 
 # ---- Chargement du modèle d'embedding ---- #
@@ -69,12 +69,12 @@ def load_teacher_model():
     if teacher_model is None:
         from transformers import BartForConditionalGeneration, BartTokenizer
 
-        print("🔄 Loading teacher model...")
+        print("Loading teacher model...")
         teacher_tokenizer = BartTokenizer.from_pretrained(teacher_checkpoint_dir)
         teacher_model = BartForConditionalGeneration.from_pretrained(teacher_checkpoint_dir)
         teacher_model.to(device)
         teacher_model.eval()
-        print("✅ Teacher model loaded")
+        print("Teacher model loaded")
 
 
 def summarize_with_teacher(text, max_length=256):
@@ -110,10 +110,10 @@ def calculate_coherence(original_text, summary):
 
         # Similarité cosinus
         similarity = util.pytorch_cos_sim(orig_embedding, summary_embedding).item()
-        print(f"📊 Similarity score: {similarity:.2f}")
+        print(f" Similarity score: {similarity:.2f}")
         return similarity
     except Exception as e:
-        print(f"⚠️ Coherence calculation failed: {e}")
+        print(f" Coherence calculation failed: {e}")
         return 0  # Assume incoherent if calculation fails
 
 
@@ -286,12 +286,12 @@ def load_teacher_model():
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         teacher_checkpoint_dir = os.path.join(BASE_DIR, '..', 'models', 'teacher_model', 'checkpoint-900')
 
-        print("🔄 Loading teacher model for QA...")
+        print(" Loading teacher model for QA...")
         teacher_tokenizer = BartTokenizer.from_pretrained(teacher_checkpoint_dir)
         teacher_model = BartForConditionalGeneration.from_pretrained(teacher_checkpoint_dir)
         teacher_model.to(device)
         teacher_model.eval()
-        print("✅ Teacher model loaded for QA")
+        print(" Teacher model loaded for QA")
 def chunk_text_with_context(text, tokenizer, max_tokens=1024, overlap=200):
     """Découpe le texte en chunks avec chevauchement pour maintenir le contexte"""
     # Tokenisation du texte
