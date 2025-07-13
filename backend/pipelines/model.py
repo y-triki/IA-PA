@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import torch
 import torch.nn as nn
 import math
@@ -196,7 +196,7 @@ class Seq2Seq(nn.Module):
             input = trg[:, t].unsqueeze(1) if teacher_force else top1
 
         return outputs
-=======
+
 import torch
 import torch.nn as nn
 import math
@@ -394,4 +394,4 @@ class Seq2Seq(nn.Module):
             input = trg[:, t].unsqueeze(1) if teacher_force else top1
 
         return outputs
->>>>>>> ecbe693 (Mise à jour depuis EC2 : dernières modifs locales)
+

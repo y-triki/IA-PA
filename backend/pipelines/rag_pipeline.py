@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 from sentence_transformers import SentenceTransformer, util
 
 # Charge le modèle une fois
@@ -20,7 +20,7 @@ def retrieve_relevant(text_chunks, question, max_chunks=15):
     scores = util.cos_sim(question_embedding, embeddings)
     best_idx = scores.argmax()
     return text_chunks[best_idx]
-=======
+
 from sentence_transformers import SentenceTransformer, util
 
 # Charge le modèle une fois
@@ -42,4 +42,4 @@ def retrieve_relevant(text_chunks, question, max_chunks=15):
     scores = util.cos_sim(question_embedding, embeddings)
     best_idx = scores.argmax()
     return text_chunks[best_idx]
->>>>>>> ecbe693 (Mise à jour depuis EC2 : dernières modifs locales)
+

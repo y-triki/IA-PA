@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import nltk
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -28,7 +27,7 @@ def structure_summary_by_theme(summary_text, n_clusters=5):
         structured_summary += " ".join(cluster_sentences) + "\n"
 
     return structured_summary.strip()
-=======
+
 import nltk
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -58,4 +57,3 @@ def structure_summary_by_theme(summary_text, n_clusters=5):
         structured_summary += " ".join(cluster_sentences) + "\n"
 
     return structured_summary.strip()
->>>>>>> ecbe693 (Mise à jour depuis EC2 : dernières modifs locales)

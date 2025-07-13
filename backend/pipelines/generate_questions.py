@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import os
 import sys
 import re
@@ -12,7 +12,7 @@ from backend.pipelines.translation import translate_en_to_fr, translate_fr_to_en
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.pipelines.model import EncoderRNN, DecoderRNN, Seq2Seq
-from backend.utils.translation_utils import detect_language, translate_to_en, translate_to_fr
+from backend.pipelines.translation import detect_language, translate_en_to_fr, translate_fr_to_en
 from backend.utils.model_loader import initialize_translation_models
 
 # Initialiser les modèles de traduction
@@ -190,7 +190,7 @@ def generate_open_questions(path, max_questions=5):
             questions.append({"question": question_fr})
 
     return questions
-=======
+
 import os
 import sys
 import re
@@ -204,7 +204,7 @@ from backend.pipelines.translation import translate_en_to_fr, translate_fr_to_en
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.pipelines.model import EncoderRNN, DecoderRNN, Seq2Seq
-from backend.utils.translation_utils import detect_language, translate_to_en, translate_to_fr
+from backend.pipelines.translation import detect_language, translate_to_en, translate_to_fr
 from backend.utils.model_loader import initialize_translation_models
 
 # Initialiser les modèles de traduction
@@ -382,4 +382,4 @@ def generate_open_questions(path, max_questions=5):
             questions.append({"question": question_fr})
 
     return questions
->>>>>>> ecbe693 (Mise à jour depuis EC2 : dernières modifs locales)
+
