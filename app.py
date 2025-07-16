@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
 import os
 import sys
+import re
 
 from backend.pipelines.pdf_pipeline import PDFProcessor
 
@@ -24,8 +25,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
-
-
 @app.route("/upload", methods=["POST"])
 def upload_file():
     file = request.files.get("file")
@@ -74,7 +73,6 @@ def upload_file():
 
     return redirect(url_for("index"))
 
-
 @app.route("/generate_quiz", methods=["POST"])
 def generate_quiz_route():
     filename = session.get("filename")
@@ -121,7 +119,6 @@ def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, os.path.basename(file_path))
 
 
-# app.py (updated /ask_question route)
 # app.py (updated /ask_question route)
 @app.route("/ask_question", methods=["POST"])
 def ask_question():

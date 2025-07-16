@@ -12,6 +12,10 @@ from backend.pipelines.model import TransformerSummarizer
 from sentence_transformers import SentenceTransformer, util
 from langdetect import detect, DetectorFactory
 DetectorFactory.seed = 0
+
+print("[DEBUG] >>> IMPORT RE OK")
+print(">>> DEBUG: generation_pipeline.py chargé depuis", __file__)
+
 # ---- Paramètres ---- #
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f" Using device: {device}")
@@ -24,7 +28,7 @@ student_model_path = os.path.join(BASE_DIR, '..', 'models', 'student_model', 'fi
 student_tokenizer_dir = os.path.join(BASE_DIR, '..', 'models', 'student_model')
 
 # Teacher model path (if needed)
-teacher_checkpoint_dir = os.path.join(BASE_DIR, '..', 'models', 'teacher_model', 'checkpoint-900')
+teacher_checkpoint_dir = os.path.join(BASE_DIR, '..', 'models', 'teacher_model')
 
 # ---- Chargement du tokenizer étudiant ---- #
 student_processor = PDFProcessor(tokenizer_dir=student_tokenizer_dir)
@@ -168,6 +172,8 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
             max_tokens=max_chunk_len,
             overlap=200
         )
+
+        print("[DEBUG] Premier chunk (si dispo) :", chunks[0] if chunks else "Aucun chunk")
         print(f"[INFO] Nombre de chunks créés: {len(chunks)}")
 
         # Limite raisonnable pour les chunks
@@ -175,6 +181,11 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
 
         # Génération des résumés avec le modèle étudiant
         student_summaries = []
+        for idx, chunk in enumerate(chunks):
+            if not chunk:
+                print(f"[WARNING] Chunk {idx} vide, ignoré.")
+                continue
+
         for idx, chunk in enumerate(chunks):
             print(f"[summarize_pdf] Traitement du chunk {idx + 1}/{len(chunks)} avec le modèle étudiant...")
             src_ids = torch.tensor([chunk], device=device)
@@ -249,7 +260,17 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
 
 
 def clean_summary_text(text):
+    import re
     """Nettoyage du résumé généré"""
+    print("[DEBUG] clean_summary_text called")
+    try:
+        print("[DEBUG] module re type:", type(re))
+    except Exception as e:
+        print("[DEBUG ERROR] re is not defined:", e)
+
+    text = re.sub(r"<s>|</s>|<pad>", "", text)
+    return text.strip()
+    """
     # Suppression des tokens spéciaux
     text = re.sub(r"<s>|</s>|<pad>", "", text)
     # Suppression des répétitions de mots
@@ -259,6 +280,7 @@ def clean_summary_text(text):
     # Suppression des caractères isolés
     text = re.sub(r'\b\w\b', '', text)
     return text.strip()
+    """
 
 
 def clean_french_text(text):
@@ -284,7 +306,7 @@ def load_teacher_model():
 
         # Configure paths
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        teacher_checkpoint_dir = os.path.join(BASE_DIR, '..', 'models', 'teacher_model', 'checkpoint-900')
+        teacher_checkpoint_dir = os.path.join(BASE_DIR, '..', 'models', 'teacher_model')
 
         print(" Loading teacher model for QA...")
         teacher_tokenizer = BartTokenizer.from_pretrained(teacher_checkpoint_dir)
