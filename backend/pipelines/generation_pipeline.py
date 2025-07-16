@@ -154,10 +154,16 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
         print(f"[INFO] Langue détectée : {lang_detected}")
 
         # Traduction si nécessaire
-        if lang_detected == "fr":
-            text_for_model = translate_fr_to_en(original_text)
-        else:
-            text_for_model = original_text
+        try:
+            if lang_detected == "fr":
+                print("[INFO] Traduction FR → EN...")
+                text_for_model = translate_fr_to_en(original_text)
+                print("[INFO] Traduction terminée.")
+            else:
+                text_for_model = original_text
+        except Exception as e:
+            print(f"[ERREUR] Problème pendant la traduction : {e}")
+            raise
 
         # Déterminer la longueur du résumé basée sur la taille du document
         summary_length_factor = min(1.0, len(text_for_model) / 10000)  # 0-1 basé sur la longueur
