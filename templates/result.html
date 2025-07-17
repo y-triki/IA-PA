@@ -34,21 +34,37 @@
       <div class="bg-gray-800 p-4 rounded shadow whitespace-pre-line">{{ summary }}</div>
     </section>
 
-    <!-- Chat Q&A -->
-    <section>
-      <h2 class="text-2xl font-bold mb-4">Posez une question</h2>
-      <form method="POST" action="{{ url_for('ask_question') }}" class="flex gap-4">
-        <input type="hidden" name="filename" value="{{ filename }}" />
-        <input type="text" name="question" placeholder="Ex : Que dit le document sur le sujet X ?" required />
-        <button type="submit" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Envoyer</button>
-      </form>
+   <!-- Chat Q&A -->
+<section class="mt-10 p-6 bg-gray-900 rounded-2xl shadow-md">
+  <h2 class="text-2xl font-bold text-white mb-4">Posez une question</h2>
 
-      {% if answer %}
-      <div class="mt-4 bg-gray-800 p-4 rounded">
-        <strong>Réponse :</strong> {{ answer }}
-      </div>
-      {% endif %}
-    </section>
+  <form method="POST" action="{{ url_for('ask_question') }}" class="flex flex-col sm:flex-row gap-4">
+    <input type="hidden" name="filename" value="{{ filename }}" />
+
+    <input
+      type="text"
+      name="question"
+      placeholder="Ex : Que dit le document sur le chapitre X ?"
+      required
+      class="flex-grow px-4 py-2 rounded-xl border border-blue-500 bg-gray-800 text-white
+             placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+    />
+
+    <button
+      type="submit"
+      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-xl transition"
+    >
+      Envoyer
+    </button>
+  </form>
+
+  {% if answer %}
+  <div class="mt-6 bg-gray-800 border border-gray-600 p-4 rounded-xl text-white">
+    <strong class="block mb-2 text-gray-300">Réponse :</strong>
+    <p>{{ answer }}</p>
+  </div>
+  {% endif %}
+</section>
 
     <!-- Bouton de génération de QCM -->
     <section>

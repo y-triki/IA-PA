@@ -25,6 +25,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
+
 @app.route("/upload", methods=["POST"])
 def upload_file():
     file = request.files.get("file")
@@ -36,10 +37,8 @@ def upload_file():
 
         try:
             with open(path, "rb") as pdf_file:
-                # Use the enhanced summarize_pdf function
                 result = summarize_pdf(pdf_file.read())
 
-            # Extract summary and metadata
             summary = result.get("summary", "")
             chunks_count = result.get("chunks_count", 0)
             model_used = result.get("model_used", "student")
@@ -47,10 +46,16 @@ def upload_file():
             if not summary:
                 return render_template("error.html", error_message="Échec du traitement du fichier.")
 
+            # Stocker toutes les infos dans la session
             session["filename"] = file.filename
             session["summary"] = summary
+            session["question"] = question
+            session["answer"] = ""
+            session["quiz"] = []
+            session["chunks_count"] = chunks_count
+            session["model_used"] = model_used
 
-            # Save results with additional metadata
+            # Sauvegarde
             save_results({
                 "filename": file.filename,
                 "summary": summary,
@@ -61,17 +66,26 @@ def upload_file():
                 "model_used": model_used
             }, output_dir="shared/exports")
 
-            return render_template("result.html",
-                                   summary=summary,
-                                   answer="",
-                                   quiz=[],
-                                   question=question,
-                                   filename=file.filename)
+            # REDIRECTION au lieu de render_template
+            return redirect(url_for("result"))
 
         except Exception as e:
             return render_template("error.html", error_message=f"Erreur pendant le traitement du fichier : {e}")
 
     return redirect(url_for("index"))
+
+
+@app.route("/result")
+def result():
+    return render_template(
+        "result.html",
+        summary=session.get("summary", ""),
+        question=session.get("question", ""),
+        answer=session.get("answer", ""),
+        quiz=session.get("quiz", []),
+        filename=session.get("filename", "")
+    )
+
 
 @app.route("/generate_quiz", methods=["POST"])
 def generate_quiz_route():
