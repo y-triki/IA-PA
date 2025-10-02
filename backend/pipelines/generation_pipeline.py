@@ -1,9 +1,12 @@
 # generation_pipeline.py
 import os
+# Avoid unnecessary tokenizer threads
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 import torch
 import re
 import nltk
 import numpy as np
+import gc
 from backend.pipelines.nucleus_decoder import nucleus_sampling_decode
 from backend.pipelines.pdf_pipeline import PDFProcessor
 from backend.pipelines.translation import translate_fr_to_en, translate_en_to_fr, detect_lang
@@ -12,6 +15,13 @@ from backend.pipelines.model import TransformerSummarizer
 from sentence_transformers import SentenceTransformer, util
 from langdetect import detect, DetectorFactory
 DetectorFactory.seed = 0
+
+# Reduce PyTorch thread usage to avoid memory spikes under heavy CPU load
+try:
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
 
 print("[DEBUG] >>> IMPORT RE OK")
 print(">>> DEBUG: generation_pipeline.py chargé depuis", __file__)
@@ -59,7 +69,8 @@ except Exception as e:
     raise
 
 # ---- Chargement du modèle d'embedding ---- #
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+# Force CPU for sentence-transformers to reduce GPU/VRAM pressure; disable progress bars
+embedder = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
 # ---- Préparation du modèle enseignant (chargé seulement si nécessaire) ---- #
 teacher_model = None
@@ -149,6 +160,12 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
         original_text = student_processor.extract_text(pdf_file)
         print(f"[summarize_pdf] Longueur du texte extrait : {len(original_text)} caractères.")
 
+        # --- ✅ Tronquage préventif pour éviter des OOM ---
+        MAX_CHARS = 10000  # Ajuste à 8000 ou 12000 si besoin
+        if len(original_text) > MAX_CHARS:
+            print(f"[INFO] Texte trop long, tronqué à {MAX_CHARS} caractères.")
+            original_text = original_text[:MAX_CHARS]
+        
         # Détection de la langue
         lang_detected = detect_lang(original_text[:500]) if len(original_text) > 100 else "fr"
         print(f"[INFO] Langue détectée : {lang_detected}")
@@ -169,9 +186,14 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
         summary_length_factor = min(1.0, len(text_for_model) / 10000)  # 0-1 basé sur la longueur
         base_max_len = 100
         dynamic_max_len = base_max_len + int(100 * summary_length_factor)
-        print(f"[INFO] Dynamic max length: {dynamic_max_len} tokens")
-
-        # Découpage intelligent avec contexte
+        print(f"[INFO] Dynamic max length (teacher fallback): {dynamic_max_len} tokens")
+        
+        # --- ✅ Libération mémoire avant le découpage ---
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        # 5️⃣ Découpage intelligent avec contexte
         chunks = chunk_text_with_context(
             text_for_model,
             student_tokenizer,
@@ -182,42 +204,53 @@ def summarize_pdf(pdf_file, max_chunk_len=1024, p=0.9, threshold=0.6):
         print("[DEBUG] Premier chunk (si dispo) :", chunks[0] if chunks else "Aucun chunk")
         print(f"[INFO] Nombre de chunks créés: {len(chunks)}")
 
-        # Limite raisonnable pour les chunks
-        chunks = chunks[:10]
+        # Limite raisonnable pour les chunks (réduite pour éviter OOM)
+        max_chunks = min(5, len(chunks))
+        chunks = chunks[:max_chunks]
 
-        # Génération des résumés avec le modèle étudiant
+        # ---- Remplace la boucle "Génération des résumés" dans summarize_pdf ----
         student_summaries = []
-        for idx, chunk in enumerate(chunks):
-            if not chunk:
-                print(f"[WARNING] Chunk {idx} vide, ignoré.")
-                continue
+        with torch.no_grad():
+            for idx, chunk in enumerate(chunks):
+                if not chunk:
+                    print(f"[WARNING] Chunk {idx} vide, ignoré.")
+                    continue
 
-        for idx, chunk in enumerate(chunks):
-            print(f"[summarize_pdf] Traitement du chunk {idx + 1}/{len(chunks)} avec le modèle étudiant...")
-            src_ids = torch.tensor([chunk], device=device)
-            src_mask = (src_ids != pad_id).long()
+                print(f"[summarize_pdf] Traitement du chunk {idx + 1}/{len(chunks)} avec le modèle étudiant...")
 
-            # Génération avec paramètres optimisés
-            summary = nucleus_sampling_decode(
-                student_model,
-                src_ids,
-                src_mask,
-                student_tokenizer,
-                max_len=dynamic_max_len,
-                p=p,
-                temperature=0.8,
-                repetition_penalty=1.5
-            )
+                src_ids = torch.tensor([chunk], device=device)
+                src_mask = (src_ids != pad_id).long()
 
-            # Nettoyage du résumé
-            cleaned_summary = clean_summary_text(summary)
-            student_summaries.append(cleaned_summary)
+                # 👉 max_length dynamique par chunk
+                in_len = src_ids.shape[-1]
+                dynamic_max_len_chunk = min(150, max(60, int(in_len * 0.4)))
+                print(f"[DEBUG] dynamic_max_len pour chunk {idx+1}: {dynamic_max_len_chunk}")
+
+                summary = nucleus_sampling_decode(
+                    student_model,
+                    src_ids,
+                    src_mask,
+                    student_tokenizer,
+                    max_len=dynamic_max_len_chunk,
+                    p=p,
+                    temperature=0.8,
+                    repetition_penalty=1.5
+                )
+
+                cleaned_summary = clean_summary_text(summary)
+                student_summaries.append(cleaned_summary)
+
+                # ✅ Libération mémoire immédiate
+                del src_ids, src_mask
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
         # Combiner les résumés
         combined_summary = " ".join(student_summaries)
 
         # Vérifier la cohérence
-        if is_coherent(combined_summary, original_text):
+        if is_coherent(combined_summary, original_text, threshold=threshold):
             print("[INFO] Student summary is coherent")
             final_summary = combined_summary
         else:
@@ -366,55 +399,151 @@ def structure_summary(summary_text):
 
 # generation_pipeline.py (additions)
 
+def _split_into_passages(text: str, max_chars: int = 600, min_chars: int = 200) -> list:
+    """Split text into rough passages (paragraphs/sentences) with size bounds."""
+    # Normalize whitespace
+    txt = re.sub(r"\s+", " ", text).strip()
+    # First split by double newlines or periods
+    parts = re.split(r"\n\n+|(?<=[.!?])\s+", txt)
+    passages = []
+    buf = ""
+    for p in parts:
+        if not p:
+            continue
+        if len(buf) + len(p) + 1 < max_chars:
+            buf = (buf + " " + p).strip()
+        else:
+            if len(buf) >= min_chars:
+                passages.append(buf)
+            buf = p
+    if len(buf) >= min_chars:
+        passages.append(buf)
+    # Cap total passages to avoid heavy encoding
+    return passages[:200]
+
+
+def _retrieve_relevant_passages(question_fr: str, raw_text_fr: str, top_k: int = 5) -> list:
+    """Use embeddings (if available) to retrieve top-k relevant passages; fallback to keyword filter."""
+    passages = _split_into_passages(raw_text_fr)
+    if not passages:
+        return [raw_text_fr[:1200]]
+
+    try:
+        # Embed question and passages (embedder is global, CPU)
+        q_emb = embedder.encode(question_fr, convert_to_tensor=True)
+        p_embs = embedder.encode(passages, convert_to_tensor=True)
+        scores = util.pytorch_cos_sim(q_emb, p_embs).cpu().numpy().flatten()
+        idxs = np.argsort(scores)[::-1][:top_k]
+        return [passages[i] for i in idxs]
+    except Exception:
+        # Fallback: simple keyword filter
+        q_tokens = [t for t in re.findall(r"\w+", question_fr.lower()) if len(t) > 2]
+        scored = []
+        for p in passages:
+            text_l = p.lower()
+            hit = sum(1 for t in q_tokens if t in text_l)
+            scored.append((hit, len(p), p))
+        scored.sort(key=lambda x: (x[0], -x[1]), reverse=True)
+        return [p for _,__,p in scored[:top_k] if _ > 0] or passages[:top_k]
+
+
+def _clean_generated_answer(ans: str) -> str:
+    """Remove artifacts and keep a concise French answer."""
+    a = ans
+    # Remove prompt echoes
+    a = re.sub(r"(?is)^.*?réponse\s*:\s*", "", a).strip()
+    # Remove artifacts like @xmath, code-ish tokens
+    a = re.sub(r"@xmath\d+", "", a)
+    a = re.sub(r"\(.*?\)\s*\*?", lambda m: "" if len(m.group(0)) > 80 else m.group(0), a)
+    a = re.sub(r"[\[\]{}<>]{1,}|_{2,}|\*{2,}|`{1,}", " ", a)
+    # Collapse repeats and spaces
+    a = re.sub(r"\b(\w+)(?:\s+\1){2,}\b", r"\1", a)
+    a = re.sub(r"\s+", " ", a).strip()
+    # Keep it within a reasonable size
+    if len(a) > 600:
+        a = a[:600].rsplit('.', 1)[0].strip() or a[:300]
+    return a
+
+
+def _answer_confidence(question_fr: str, answer_fr: str) -> float:
+    """Rough confidence using semantic similarity and simple heuristics."""
+    try:
+        q = question_fr.strip()
+        a = answer_fr.strip()
+        if not a:
+            return 0.0
+        # Embedding similarity
+        q_emb = embedder.encode(q[:400], convert_to_tensor=True)
+        a_emb = embedder.encode(a[:600], convert_to_tensor=True)
+        sim = float(util.pytorch_cos_sim(q_emb, a_emb).item())
+    except Exception:
+        sim = 0.0
+    # Penalize gibberish patterns
+    gibberish_penalty = 0.0
+    if re.search(r"[A-Za-z]\d{3,}|\d{3,}[A-Za-z]", answer_fr):
+        gibberish_penalty += 0.1
+    if answer_fr.count("?") > 1:
+        gibberish_penalty += 0.1
+    if len(answer_fr.split()) < 4:
+        gibberish_penalty += 0.2
+    return max(0.0, sim - gibberish_penalty)
+
+
 def answer_question_with_teacher_french(raw_text: str, question: str, max_length: int = 256) -> str:
-    """Use teacher model for French prompt-based question answering"""
-    # Load teacher model if not already loaded
+    """Answer a French question using teacher model with lightweight retrieval and safer decoding."""
     load_teacher_model()
 
-    # Translate only the question to English
-    question_en = translate_fr_to_en(question)
+    # Build compact, relevant context (French)
+    top_passages = _retrieve_relevant_passages(question, raw_text, top_k=5)
+    context = "\n\n".join(top_passages)
+    # Hard cap context length to avoid long inputs
+    context = context[:4000]
 
-    # Keep context in French
-    context = raw_text[:15000]  # Limit context
+    instruction = (
+        "Vous êtes un assistant concis et factuel. Répondez STRICTEMENT en français, en une ou deux phrases, "
+        "uniquement à partir du contenu fourni. Si l'information n'est pas présente dans le contexte, dites : "
+        "\"Je ne trouve pas d’information dans le document.\""
+    )
 
-    # Create French-oriented prompt
-    prompt = f"""
-    Voici une question sur un document en français. Répondez en français.
+    prompt = (
+        f"{instruction}\n\nQuestion: {question}\n\nContexte:\n{context}\n\nRéponse:" 
+    )
 
-    Question: {question}
-
-    Contexte du document:
-    {context}
-
-    Réponse:
-    """
-
-    # Tokenize input
+    # Tokenize without unnecessary padding
     inputs = teacher_tokenizer(
         prompt,
         return_tensors="pt",
         max_length=1024,
         truncation=True,
-        padding="max_length"
+        padding=False
     ).to(device)
 
-    # Generate answer
+    # Safer generation settings
+    gen_kwargs = dict(
+        max_new_tokens=min(180, max_length),
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9,
+        num_beams=3,
+        no_repeat_ngram_size=4,
+        repetition_penalty=1.25,
+        length_penalty=1.0,
+        early_stopping=True
+    )
+
     with torch.no_grad():
-        output_ids = teacher_model.generate(
-            **inputs,
-            max_length=max_length,
-            num_beams=4,
-            early_stopping=True,
-            repetition_penalty=1.5,
-            no_repeat_ngram_size=3,
-            temperature=0.7
-        )
+        output_ids = teacher_model.generate(**inputs, **gen_kwargs)
 
-    # Decode and clean answer
     answer = teacher_tokenizer.decode(output_ids[0], skip_special_tokens=True)
-
-    # Extract just the answer part
+    # Keep only the part after "Réponse:" if present
     if "Réponse:" in answer:
-        answer = answer.split("Réponse:")[-1].strip()
+        answer = answer.split("Réponse:")[-1]
+
+    answer = _clean_generated_answer(answer)
+
+    # Confidence check and fallback
+    conf = _answer_confidence(question, answer)
+    if conf < 0.25:
+        return "Je ne trouve pas d’information dans le document."
 
     return clean_french_text(answer)

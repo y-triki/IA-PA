@@ -28,6 +28,21 @@
     </div>
     {% endfor %}
 
+    <!-- Bloc feedback QCM -->
+    <div class="mt-6 flex items-center gap-3">
+      <form method="POST" action="{{ url_for('feedback') }}" class="flex items-center gap-3 w-full">
+        <input type="hidden" name="filename" value="{{ filename }}" />
+        <input type="hidden" name="item_type" value="quiz" />
+        <!-- encode the quiz questions into a single hidden field -->
+        <input type="hidden" name="quiz" value="{{ quiz | map(attribute='question') | join(' || ') }}" />
+        <span class="text-sm text-gray-400 mr-2">Ce QCM vous a-t-il été utile ?</span>
+        <button type="submit" name="feedback" value="up" title="Utile"
+                class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded">👍</button>
+        <button type="submit" name="feedback" value="down" title="Inutile"
+                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded">👎</button>
+      </form>
+    </div>
+
     <div class="text-center">
       <button type="submit" class="mt-6 bg-green-600 px-6 py-2 rounded hover:bg-green-700">
         Soumettre mes réponses

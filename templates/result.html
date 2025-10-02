@@ -19,6 +19,12 @@
     </nav>
   <div class="max-w-4xl mx-auto space-y-12">
 
+    {% if feedback_message %}
+    <div class="p-4 rounded bg-emerald-800/40 border border-emerald-600 text-emerald-200">
+      {{ feedback_message }}
+    </div>
+    {% endif %}
+
     <!-- Aperçu PDF -->
     {% if filename %}
     <section>
@@ -32,6 +38,18 @@
     <section>
       <h2 class="text-2xl font-bold mb-4">Résumé</h2>
       <div class="bg-gray-800 p-4 rounded shadow whitespace-pre-line">{{ summary }}</div>
+
+      <!-- Feedback résumé -->
+      <form method="POST" action="{{ url_for('feedback') }}" class="flex items-center gap-3 mt-4">
+        <input type="hidden" name="filename" value="{{ filename }}" />
+        <input type="hidden" name="summary" value="{{ summary }}">
+        <input type="hidden" name="item_type" value="summary">
+        <span class="text-sm text-gray-400 mr-2">Ce résumé vous a-t-il été utile ?</span>
+        <button type="submit" name="feedback" value="up" title="Utile"
+                class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded">👍</button>
+        <button type="submit" name="feedback" value="down" title="Inutile"
+                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded">👎</button>
+      </form>
     </section>
 
    <!-- Chat Q&A -->
@@ -61,7 +79,26 @@
   {% if answer %}
   <div class="mt-6 bg-gray-800 border border-gray-600 p-4 rounded-xl text-white">
     <strong class="block mb-2 text-gray-300">Réponse :</strong>
-    <p>{{ answer }}</p>
+    <p class="mb-4">{{ answer }}</p>
+
+    <!-- Feedback form -->
+    <form method="POST" action="{{ url_for('feedback') }}" class="flex items-center gap-3">
+      <input type="hidden" name="filename" value="{{ filename }}" />
+      <input type="hidden" name="question" value="{{ question }}" />
+      <input type="hidden" name="answer" value="{{ answer }}" />
+
+      <span class="text-sm text-gray-400 mr-2">Ce résultat vous a-t-il été utile ?</span>
+      <button type="submit" name="feedback" value="up" title="Utile"
+              class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded">👍</button>
+      <button type="submit" name="feedback" value="down" title="Inutile"
+              class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded">👎</button>
+    </form>
+
+    {% if feedback_message %}
+    <div class="mt-4 p-3 rounded bg-emerald-900/50 border border-emerald-700 text-emerald-200">
+      {{ feedback_message }}
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 </section>

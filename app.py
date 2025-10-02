@@ -3,6 +3,14 @@ import os
 import sys
 import re
 
+# Limit parallelism to avoid high memory/sem_wait leaks on macOS
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
 from backend.pipelines.pdf_pipeline import PDFProcessor
 
 # Ajout du chemin du backend
@@ -15,6 +23,8 @@ from werkzeug.utils import safe_join
 
 from backend.utils.load_from_s3 import download_all_models
 download_all_models()
+from backend.utils.feedback_manager import FeedbackManager
+from backend.utils.finetune_from_feedback import build_all_feedback_datasets
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
@@ -77,13 +87,16 @@ def upload_file():
 
 @app.route("/result")
 def result():
+    # Retrieve one-time feedback message if available
+    feedback_message = session.pop("feedback_message", None)
     return render_template(
         "result.html",
         summary=session.get("summary", ""),
         question=session.get("question", ""),
         answer=session.get("answer", ""),
         quiz=session.get("quiz", []),
-        filename=session.get("filename", "")
+        filename=session.get("filename", ""),
+        feedback_message=feedback_message
     )
 
 
@@ -122,7 +135,7 @@ def submit_quiz():
     submitted_answers = {
         key: value for key, value in request.form.items() if key.startswith("question_")
     }
-    return render_template("qcm.html",
+    return render_template("quiz.html",
                            summary=session.get("summary", ""),
                            quiz=session.get("quiz", []),
                            answers=submitted_answers)
@@ -161,6 +174,11 @@ def ask_question():
             question=question
         )
 
+        # Persist latest Q&A in session so result page and feedback flow can reuse it
+        session["question"] = question
+        session["answer"] = answer
+        session["filename"] = filename
+
         return render_template(
             "result.html",
             summary=session.get("summary", ""),
@@ -174,5 +192,58 @@ def ask_question():
         return render_template("error.html",
                                error_message=f"Erreur lors du traitement de la question: {str(e)}")
 
+@app.route("/feedback", methods=["POST"])
+def feedback():
+    """Collect user feedback on Q&A/Summary/Quiz and persist to JSON, then return to result page."""
+    try:
+        feedback_value = request.form.get("feedback", "").strip()
+        item_type = request.form.get("item_type", "") or "qa"
+        filename = request.form.get("filename", "")
+
+        # Accept multiple payload types
+        question = request.form.get("question", "")
+        answer = request.form.get("answer", "")
+        summary = request.form.get("summary", "")
+        quiz_payload = request.form.get("quiz", "")
+
+        # Prefer explicit answer; else use summary; else use quiz payload
+        payload_answer = answer or summary or quiz_payload or ""
+
+        fm = FeedbackManager()
+        fm.append_feedback(
+            question=question,
+            answer=payload_answer,
+            feedback=feedback_value,
+            meta={
+                "filename": filename,
+                "path": os.path.join(UPLOAD_FOLDER, filename) if filename else None,
+                "item_type": item_type,
+            }
+        )
+        print(f"[FEEDBACK] Saved: type={item_type} feedback={feedback_value} filename={filename}")
+        session["feedback_message"] = "Merci pour votre retour !"
+    except Exception as e:
+        print(f"[FEEDBACK][ERROR] {e}")
+        session["feedback_message"] = f"Erreur lors de l'enregistrement du feedback : {e}"
+
+    # Ensure result page has data even if session was not populated earlier
+    return redirect(url_for("result"))
+
+
+@app.route("/export_feedback_datasets", methods=["GET"]) 
+def export_feedback_datasets():
+    try:
+        info = build_all_feedback_datasets()
+        # Persist a short confirmation for the UI
+        session["feedback_message"] = (
+            f"Datasets exportés: summarization={info.get('summarization_count')} items, "
+            f"qa={info.get('qa_count')} items. Dossier: {info.get('output_dir')}"
+        )
+        # Redirect to result page to show the banner with message
+        return redirect(url_for('result'))
+    except Exception as e:
+        return render_template("error.html", error_message=f"Erreur export dataset: {e}")
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5050, debug=False)

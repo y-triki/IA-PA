@@ -1,0 +1,90 @@
+[
+  {
+    "question": "",
+    "answer": "Les images sont utilisées pour détecter différents types d'images électroniques et plastiques. Nous avons développé une application mobile qui détecte 6 catégories d'images de déchets électroniques et plastiques pour la détection en temps réel directement sur le smartphone sans aucune connexion cloud ou internet. Nous avons utilisé diverses technologies pour assurer la fluidité, l'efficacité et l'interface intuitive pour développer une application mobile facile à utiliser et capable de détecter les déchets efficacement et indépendamment. Le modèle mobilenetv2 , un modèle efficace de classification des images , a été mis en place pour détecter différents types d'images électroniques et de déchets plastiques . C'est un réseau pré-formé de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile. Mobile montant net v2 est un réseau pré-entraînement de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile.",
+    "feedback": "up",
+    "timestamp": "2025-09-14T17:17:00.191157Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "summary"
+    }
+  },
+  {
+    "question": "",
+    "answer": "Les images sont utilisées pour détecter différents types d'images électroniques et plastiques. Nous avons développé une application mobile qui détecte 6 catégories d'images de déchets électroniques et plastiques pour la détection en temps réel directement sur le smartphone sans aucune connexion cloud ou internet. Nous avons utilisé diverses technologies pour assurer la fluidité, l'efficacité et l'interface intuitive pour développer une application mobile facile à utiliser et capable de détecter les déchets efficacement et indépendamment. Le modèle mobilenetv2 , un modèle efficace de classification des images , a été mis en place pour détecter différents types d'images électroniques et de déchets plastiques . C'est un réseau pré-formé de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile. Mobile montant net v2 est un réseau pré-entraînement de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile.",
+    "feedback": "up",
+    "timestamp": "2025-09-14T17:22:59.755158Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "summary"
+    }
+  },
+  {
+    "question": "",
+    "answer": "Les images sont utilisées pour détecter différents types d'images électroniques et plastiques. Nous avons développé une application mobile qui détecte 6 catégories d'images de déchets électroniques et plastiques pour la détection en temps réel directement sur le smartphone sans aucune connexion cloud ou internet. Nous avons utilisé diverses technologies pour assurer la fluidité, l'efficacité et l'interface intuitive pour développer une application mobile facile à utiliser et capable de détecter les déchets efficacement et indépendamment. Le modèle mobilenetv2 , un modèle efficace de classification des images , a été mis en place pour détecter différents types d'images électroniques et de déchets plastiques . C'est un réseau pré-formé de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile. Mobile montant net v2 est un réseau pré-entraînement de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile.",
+    "feedback": "up",
+    "timestamp": "2025-09-14T17:54:52.520935Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "summary"
+    }
+  },
+  {
+    "question": "c'est quoi les 6 catégories d'images de déchets ?",
+    "answer": "In français \r\n le modèle mobilenetv2 \r\n is an open source open source framework for mobile applications de l'apprentissage supervisé de images de déchets de la cas pratique . Nous avons créé six dossiers de données d'images d'aluminium , de carton , de verre , de plastique, de plasticique , de et de déchetts électroniques a    les 6 catégories d'image de décdchets \r\n @xmath0 s@xmath1 s@xcite ( tensorflow lite ); le tensorflow lite ( tensorflow mte ) ( tensorflow pacs: 13.30.jv ) ( e.g.: 14.10.hc ) ( o.e.a.s .tflite ) ( j.p.m .lite ( j.-p.b.m.d.y .i.a .u . R .e . C . _ \r\n * # 1 * * * # 2 * # 3 * # 4 *",
+    "feedback": "down",
+    "timestamp": "2025-09-14T18:07:57.620814Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "qa"
+    }
+  },
+  {
+    "question": "",
+    "answer": "Les images sont utilisées pour détecter différents types d'images électroniques et plastiques. Nous avons développé une application mobile qui détecte 6 catégories d'images de déchets électroniques et plastiques pour la détection en temps réel directement sur le smartphone sans aucune connexion cloud ou internet. Nous avons utilisé diverses technologies pour assurer la fluidité, l'efficacité et l'interface intuitive pour développer une application mobile facile à utiliser et capable de détecter les déchets efficacement et indépendamment. Le modèle mobilenetv2 , un modèle efficace de classification des images , a été mis en place pour détecter différents types d'images électroniques et de déchets plastiques . C'est un réseau pré-formé de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile. Mobile montant net v2 est un réseau pré-entraînement de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile.",
+    "feedback": "down",
+    "timestamp": "2025-10-01T14:24:17.673227Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "summary"
+    }
+  },
+  {
+    "question": "c'est quoi le cas pratique ?",
+    "answer": "Je ne trouve pas d’information dans le document.",
+    "feedback": "down",
+    "timestamp": "2025-10-01T14:25:10.726468Z",
+    "meta": {
+      "filename": "test.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/test.pdf",
+      "item_type": "qa"
+    }
+  },
+  {
+    "question": "",
+    "answer": ". Yasminetriki ( yasminetriki2000@gmail.com ) est un analyste de données chez smile & pay , l'analyste de données chez smile & pay et l'analyste de données chez smile & pay société smile & pay . Yasminetriki est un analyste de données autonome chez smile and pay , travaillant dans le département d'intégration de l'entreprise tout en augmentant professionnellement . Yasminetriki est également un analyste de données chez smile & pay société smile et pay . Yasminetriki est un analyste de données chez smile et pay , travaillant dans le département d'intégration de l'entreprise tout en augmentant professionnellement . Yasminetriki est un analyste de données chez smile et pay , travaillant dans le département d'intégration de l'entreprise tout en augmentant professionnellement . Yasminetriki est un analyste de données autonome chez smile et pay , travaillant dans le département d'intégration de l'entreprise tout en augmentant professionnellement . Yasminetriki est un analyste de données autonome chez smile et pay , travaillant dans le département d'intégration de l'entreprise tout en augmentant professionnellement . Yasminetriki est un analyste de données à",
+    "feedback": "down",
+    "timestamp": "2025-10-01T14:30:41.290921Z",
+    "meta": {
+      "filename": "CV-TRIKIYasmine.pdf-2.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/CV-TRIKIYasmine.pdf-2.pdf",
+      "item_type": "summary"
+    }
+  },
+  {
+    "question": "quelles sont les compétences de yasmine Triki",
+    "answer": "Je ne trouve pas d’information dans le document.",
+    "feedback": "down",
+    "timestamp": "2025-10-01T14:31:32.437214Z",
+    "meta": {
+      "filename": "CV-TRIKIYasmine.pdf-2.pdf",
+      "path": "/Users/yasminetriki/PycharmProjects/flaskProject/uploads/CV-TRIKIYasmine.pdf-2.pdf",
+      "item_type": "qa"
+    }
+  }
+]

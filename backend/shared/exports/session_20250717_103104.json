@@ -1,0 +1,9 @@
+{
+  "filename": "Cas pratique.pdf",
+  "summary": "Les images sont utilisées pour détecter différents types d'images électroniques et plastiques. Nous avons développé une application mobile qui détecte 6 catégories d'images de déchets électroniques et plastiques pour la détection en temps réel directement sur le smartphone sans aucune connexion cloud ou internet. Nous avons utilisé diverses technologies pour assurer la fluidité, l'efficacité et l'interface intuitive pour développer une application mobile facile à utiliser et capable de détecter les déchets efficacement et indépendamment. Le modèle mobilenetv2 , un modèle efficace de classification des images , a été mis en place pour détecter différents types d'images électroniques et de déchets plastiques . C'est un réseau pré-formé de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile. Mobile montant net v2 est un réseau pré-entraînement de neurones qui offre un excellent équilibre entre précision et vitesse, ce qui le rend parfait pour une utilisation mobile.",
+  "question": "",
+  "answer": "",
+  "quiz": [],
+  "chunks_count": 1,
+  "model_used": "teacher"
+}
