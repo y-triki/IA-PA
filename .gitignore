@@ -1,2 +1,9 @@
 backend/models/
 backend/models/
+# Ignorer tous les modèles
+backend/models/*
+models/*
+*.pt
+*.pth
+*.bin
+*.safetensors
