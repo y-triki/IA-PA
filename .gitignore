@@ -1,5 +1,3 @@
-backend/models/
-backend/models/
 # Ignorer tous les modèles
 backend/models/*
 models/*
